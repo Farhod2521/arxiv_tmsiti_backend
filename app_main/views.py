@@ -4,9 +4,49 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authtoken.models import Token
 from rest_framework import status
-from .models import User, Role, BigCategory, Doc
-from .serializers import LoginSerializer, BigCategorySerializer, DocSerializer
+from .models import User, Role, BigCategory, Doc, Category
+from .serializers import LoginSerializer, BigCategorySerializer, DocSerializer, RoleSerializer
+from django.db import transaction
+import json
 
+class WordDataImportAPIView(APIView):
+    def post(self, request):
+        try:
+            data = request.data
+            
+            with transaction.atomic():
+                for role_data in data:
+                    # Role yaratish yoki olish
+                    role_name = role_data.get('name')
+                    role, created = Role.objects.get_or_create(name=role_name)
+                    
+                    # BigCategory lar yaratish
+                    for big_category_data in role_data.get('big_categories', []):
+                        big_category_title = big_category_data.get('title')
+                        big_category, created = BigCategory.objects.get_or_create(
+                            title=big_category_title,
+                            role=role
+                        )
+                        
+                        # Category lar yaratish
+                        for category_data in big_category_data.get('categories', []):
+                            Category.objects.create(
+                                big_category=big_category,
+                                ichki_raqam=category_data.get('ichki_raqam', ''),
+                                tartib_raqami=category_data.get('tartib_raqami', ''),
+                                izoh=category_data.get('izoh', ''),
+                                order=category_data.get('order', 0)
+                            )
+            
+            return Response({
+                'message': 'Ma\'lumotlar muvaffaqiyatli import qilindi',
+                'imported_roles': len(data)
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response({
+                'error': f'Import jarayonida xatolik: {str(e)}'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
 # -------------------------
 #   LOGIN API

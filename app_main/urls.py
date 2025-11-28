@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import LoginAPIView, LogoutAPIView, DocumentListAPIView, DocUpdateDeleteAPIView, MyProfileAPIView
+from .views import LoginAPIView, LogoutAPIView, DocumentListAPIView, DocUpdateDeleteAPIView, MyProfileAPIView, WordDataImportAPIView
 
 urlpatterns = [
     #################  USER ###############################
@@ -10,6 +10,7 @@ urlpatterns = [
 
 
     ##################   DOC ###########################
+    path("docs/json-upload/", WordDataImportAPIView.as_view(), name="logout"),
     path("docs/list/", DocumentListAPIView.as_view(), name="logout"),
     path('docs/delete/', DocUpdateDeleteAPIView.as_view(), name='docs-delete'),
     path('docs/update/<int:pk>/', DocUpdateDeleteAPIView.as_view(), name='docs-update'),
