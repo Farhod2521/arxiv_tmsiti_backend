@@ -43,13 +43,13 @@ class BigCategorySerializer(serializers.ModelSerializer):
 
 
 
-class CategorySerializer(serializers.ModelSerializer):
+class CategorySerializer1(serializers.ModelSerializer):
     class Meta:
         model = Category
         fields = ['ichki_raqam', 'tartib_raqami', 'izoh', 'order']
 
 class BigCategorySerializer1(serializers.ModelSerializer):
-    categories = CategorySerializer(many=True, read_only=True)
+    categories = CategorySerializer1(many=True, read_only=True)
     
     class Meta:
         model = BigCategory
