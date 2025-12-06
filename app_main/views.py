@@ -5,7 +5,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.authtoken.models import Token
 from rest_framework import status
 from .models import User, Role, BigCategory, Doc, Category
-from .serializers import LoginSerializer, BigCategorySerializer, DocSerializer, RoleSerializer
+from .serializers import LoginSerializer, BigCategorySerializer, DocSerializer, RoleSerializer,CategoryCRUDSerializer
 from django.db import transaction
 import json
 
@@ -141,55 +141,149 @@ class DocumentListAPIView(APIView):
 # -------------------------
 #   DocUpdateDeleteAPIView
 # -------------------------
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from rest_framework import status
+
+from .models import Doc
+from .serializers import DocSerializer
+
+
 class DocUpdateDeleteAPIView(APIView):
     permission_classes = [IsAuthenticated]
-    
-    # ---- CREATE: Yangi hujjat qo‘shish ----
+
+    # ✅ GET (ID bo‘yicha bitta hujjat olish)
+    def get(self, request, pk):
+        try:
+            doc = Doc.objects.get(id=pk)
+        except Doc.DoesNotExist:
+            return Response({"error": "Hujjat topilmadi"}, status=404)
+
+        serializer = DocSerializer(doc, context={"request": request})
+        return Response({
+            "message": "Hujjat topildi",
+            "data": serializer.data
+        })
+
+    # ✅ CREATE
     def post(self, request):
-        serializer = DocSerializer(data=request.data)
+        serializer = DocSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
+
         return Response({
             "message": "Hujjat muvaffaqiyatli yaratildi",
             "data": serializer.data
         }, status=201)
 
-    # ---- DELETE: Bir nechta hujjat o'chirish ----
+    # ✅ DELETE (Bir nechta)
     def delete(self, request):
         ids = request.data.get("ids", None)
 
         if not ids:
-            return Response({"error": "ids bo‘sh bo‘lishi mumkin emas. Masalan: [3, 7, 10]"},
-                            status=400)
-
-        if not all(isinstance(i, int) for i in ids):
-            return Response({"error": "ids faqat integer bo‘lishi kerak"}, status=400)
+            return Response(
+                {"error": "ids bo‘sh bo‘lishi mumkin emas. Masalan: [3, 7, 10]"},
+                status=400
+            )
 
         docs = Doc.objects.filter(id__in=ids)
 
         if not docs.exists():
-            return Response({"error": "Berilgan ID bo‘yicha hujjatlar topilmadi"}, status=404)
+            return Response(
+                {"error": "Berilgan ID bo‘yicha hujjatlar topilmadi"},
+                status=404
+            )
 
         count = docs.count()
         docs.delete()
 
         return Response({
-            "message": f"{count} ta hujjat muvaffaqiyatli o‘chirildi",
+            "message": f"{count} ta hujjat o‘chirildi",
             "deleted_ids": ids
-        })
+        }, status=200)
 
-    # ---- UPDATE: Bitta hujjat yangilash ----
     def put(self, request, pk):
         try:
             doc = Doc.objects.get(id=pk)
         except Doc.DoesNotExist:
             return Response({"error": "Hujjat topilmadi"}, status=404)
 
-        serializer = DocSerializer(doc, data=request.data, partial=False)
+        # Hujjatda category bor, lekin requestda yo'q bo'lsa, o'zgartirmaslik
+        data = request.data.copy()
+        if 'category' not in data and doc.category:
+            data['category'] = doc.category.id
+        
+        serializer = DocSerializer(doc, data=data)  # to'liq update
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
         return Response({
-            "message": "Hujjat muvaffaqiyatli yangilandi",
+            "message": "Hujjat to'liq yangilandi",
             "data": serializer.data
         })
+
+    def patch(self, request, pk):
+        try:
+            doc = Doc.objects.get(id=pk)
+        except Doc.DoesNotExist:
+            return Response({"error": "Hujjat topilmadi"}, status=404)
+
+        serializer = DocSerializer(doc, data=request.data, partial=True)  # qisman update
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({
+            "message": "Hujjat qisman yangilandi",
+            "data": serializer.data
+        })
+
+
+class CategoryUpdateAPIView(APIView):
+
+    def put(self, request, pk):
+        try:
+            category = Category.objects.get(pk=pk)
+        except Category.DoesNotExist:
+            return Response({"error": "Kategoriya topilmadi"}, status=404)
+
+        serializer = CategoryCRUDSerializer(category, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+
+        return Response(serializer.errors, status=400)
+
+    # Agar qisman yangilash kerak bo‘lsa (PATCH)
+    def patch(self, request, pk):
+        try:
+            category = Category.objects.get(pk=pk)
+        except Category.DoesNotExist:
+            return Response({"error": "Kategoriya topilmadi"}, status=404)
+
+        serializer = CategoryCRUDSerializer(category, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=200)
+
+        return Response(serializer.errors, status=400)
+class CategoryDeleteAPIView(APIView):
+
+    def delete(self, request, pk):
+        try:
+            category = Category.objects.get(pk=pk)
+        except Category.DoesNotExist:
+            return Response({"error": "Kategoriya topilmadi"}, status=404)
+
+        category.delete()
+        return Response({"message": "Kategoriya muvaffaqiyatli o‘chirildi"}, status=204)
+    
+class CategoryCreateAPIView(APIView):
+
+    def post(self, request):
+        serializer = CategoryCRUDSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

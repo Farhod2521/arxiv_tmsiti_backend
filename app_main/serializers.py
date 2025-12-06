@@ -10,7 +10,11 @@ class LoginSerializer(serializers.Serializer):
 class DocSerializer(serializers.ModelSerializer):
     class Meta:
         model = Doc
-        fields = ["id", "title", "file", "category"]
+        fields = ['id', 'title', 'file', 'category']
+        # Category ni majburiy emas qilish
+        extra_kwargs = {
+            'category': {'required': False}
+        }
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -26,6 +30,14 @@ class CategorySerializer(serializers.ModelSerializer):
             "order",
             "docs"
         ]
+
+class CategoryCRUDSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Category
+        fields = ['id', 'big_category', 'ichki_raqam', 'tartib_raqami', 'izoh', 'order']
+        extra_kwargs = {
+            'big_category': {'required': True}
+        }
 
 
 class BigCategorySerializer(serializers.ModelSerializer):
