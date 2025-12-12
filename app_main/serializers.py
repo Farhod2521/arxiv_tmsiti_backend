@@ -7,11 +7,16 @@ class LoginSerializer(serializers.Serializer):
 
 
 
+
 class DocSerializer(serializers.ModelSerializer):
+    create_at = serializers.DateTimeField(
+        format="%d/%m/%Y %H:%M",
+        read_only=True
+    )
+
     class Meta:
         model = Doc
-        fields = ['id', 'title', 'file', 'category']
-        # Category ni majburiy emas qilish
+        fields = ['id', 'title', 'file', 'category', 'create_at']
         extra_kwargs = {
             'category': {'required': False}
         }

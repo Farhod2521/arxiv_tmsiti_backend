@@ -8,7 +8,7 @@ from .models import User, Role, BigCategory, Doc, Category
 from .serializers import LoginSerializer, BigCategorySerializer, DocSerializer, RoleSerializer,CategoryCRUDSerializer
 from django.db import transaction
 import json
-
+from django.shortcuts import get_object_or_404
 class WordDataImportAPIView(APIView):
     def post(self, request):
         try:
@@ -287,3 +287,41 @@ class CategoryCreateAPIView(APIView):
             return Response(serializer.data, status=status.HTTP_201_CREATED)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+
+
+class CategoryReorderAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request):
+        """
+        Kategoriyalarni tartibini o'zgartirish
+        """
+        try:
+            data = request.data
+            if not isinstance(data, list):
+                return Response(
+                    {"error": "Ma'lumotlar ro'yxat ko'rinishida bo'lishi kerak"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Har bir kategoriya uchun yangi tartib raqamini o'rnatish
+            for item in data:
+                category_id = item.get('id')
+                new_order = item.get('order')
+                
+                if category_id and new_order is not None:
+                    category = get_object_or_404(Category, id=category_id)
+                    category.order = new_order
+                    category.save()
+            
+            return Response(
+                {"message": "Kategoriyalar tartibi muvaffaqiyatli yangilandi"},
+                status=status.HTTP_200_OK
+            )
+            
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )

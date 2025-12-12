@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     LoginAPIView, LogoutAPIView, DocumentListAPIView,
     DocUpdateDeleteAPIView, MyProfileAPIView, WordDataImportAPIView,
-    CategoryUpdateAPIView, CategoryDeleteAPIView, CategoryCreateAPIView
+    CategoryUpdateAPIView, CategoryDeleteAPIView, CategoryCreateAPIView, CategoryReorderAPIView
 )
 
 urlpatterns = [
@@ -23,4 +23,5 @@ urlpatterns = [
     path('category/create/', CategoryCreateAPIView.as_view()),
     path('category/update/<int:pk>/', CategoryUpdateAPIView.as_view()),
     path('category/delete/<int:pk>/', CategoryDeleteAPIView.as_view()),
+    path('category/reorder/', CategoryReorderAPIView.as_view(), name='category_reorder'),
 ]

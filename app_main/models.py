@@ -105,7 +105,7 @@ class Doc(models.Model):
     title = models.CharField(max_length=255, verbose_name="Hujjat nomi", blank=True , null=True)
     file = models.FileField(upload_to="docs/", verbose_name="PDF fayl")
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name="docs", verbose_name="Kategoriya")
-
+    create_at = models.DateTimeField(auto_now_add=True)
     class Meta:
         verbose_name = "Hujjat"
         verbose_name_plural = "Hujjatlar"
