@@ -121,17 +121,25 @@ class DocumentListAPIView(APIView):
 
     def get(self, request):
         user_role = request.user.role
+        title = request.query_params.get("title")  # 🔑 query param
 
         if user_role is None:
-            return Response({"error": "Foydalanuvchi roli mavjud emas"}, status=400)
+            return Response(
+                {"error": "Foydalanuvchi roli mavjud emas"},
+                status=400
+            )
 
-        # ADMIN VA DIREKTOR BARCHA BO‘LIMLARNI KO‘RADI
+        # 🔐 ADMIN / DIREKTOR
         if user_role.name.lower() in ["admin", "direktor", "director"]:
-            big_categories = BigCategory.objects.all().order_by("id")
-
+            big_categories = BigCategory.objects.all()
         else:
-            # Oddiy role faqat o‘ziga tegishli bo‘limlarni ko‘radi
-            big_categories = BigCategory.objects.filter(role=user_role).order_by("id")
+            big_categories = BigCategory.objects.filter(role=user_role)
+
+        # 🔎 TITLE BO‘YICHA FILTER
+        if title:
+            big_categories = big_categories.filter(title__iexact=title)
+
+        big_categories = big_categories.order_by("id")
 
         serializer = BigCategorySerializer(big_categories, many=True)
         return Response(serializer.data)

@@ -55,7 +55,6 @@ class BigCategorySerializer(serializers.ModelSerializer):
     def get_categories(self, obj):
         categories = obj.categories.all().order_by("order")
         return CategorySerializer(categories, many=True).data
-    
 
 
 
